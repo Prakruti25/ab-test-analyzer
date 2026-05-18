@@ -81,3 +81,39 @@ class TestPower:
         # Big sample, clear effect → power should be high
         p = observed_power(10_000, 10_000, 0.10, 0.13)
         assert p > 0.95
+
+# ---------------------------------------------------------------------------
+# Bayesian conversion test
+# ---------------------------------------------------------------------------
+from src.bayesian import bayesian_conversion_test, interpret_bayesian_result
+
+
+class TestBayesian:
+    def test_clear_winner_high_probability(self):
+        # 8% vs 12% on 10K each — variant should win with high probability
+        r = bayesian_conversion_test(800, 10_000, 1200, 10_000)
+        assert r.prob_variant_better > 0.99
+        assert r.expected_lift > 0
+        # Credible interval shouldn't cross zero
+        assert r.credible_interval_low > 0
+
+    def test_no_difference_uncertain(self):
+        # Same rate on both arms — should be near 50/50
+        r = bayesian_conversion_test(100, 1000, 100, 1000)
+        assert 0.35 < r.prob_variant_better < 0.65
+
+    def test_variant_clearly_worse(self):
+        # Variant is worse: 12% vs 8%
+        r = bayesian_conversion_test(1200, 10_000, 800, 10_000)
+        assert r.prob_variant_better < 0.01
+        assert r.expected_lift < 0
+
+    def test_interpretation_returns_string(self):
+        r = bayesian_conversion_test(800, 10_000, 1200, 10_000)
+        msg = interpret_bayesian_result(r)
+        assert isinstance(msg, str)
+        assert "%" in msg
+
+    def test_raises_on_zero_users(self):
+        with pytest.raises(ValueError):
+            bayesian_conversion_test(0, 0, 1, 100)
