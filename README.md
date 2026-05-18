@@ -40,10 +40,10 @@ This tool answers all of those for any A/B test you throw at it — with plain-E
 ## 📷 Screenshots
 
 ### Bayesian posterior distributions
-![Bayesian](images/bayesian.png)
+![Bayesian](/Users/prakrutipatel/Desktop/image.png)
 
 ### Sample-size calculator in the sidebar
-![Sidebar](images/sidebar.png)
+![Sidebar](/Users/prakrutipatel/Desktop/image 2.png)
 
 ## 🧠 Statistical Methods
 
