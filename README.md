@@ -37,13 +37,6 @@ This tool answers all of those for any A/B test you throw at it — with plain-E
 ![Plotly](https://img.shields.io/badge/Plotly-charts-3F4F75?style=flat&logo=plotly&logoColor=white)
 ![pytest](https://img.shields.io/badge/pytest-15%20passing-0A9EDC?style=flat&logo=pytest&logoColor=white)
 
-## 📷 Screenshots
-
-### Bayesian posterior distributions
-![Bayesian](/Users/prakrutipatel/Desktop/image.png)
-
-### Sample-size calculator in the sidebar
-![Sidebar](/Users/prakrutipatel/Desktop/image 2.png)
 
 ## 🧠 Statistical Methods
 
