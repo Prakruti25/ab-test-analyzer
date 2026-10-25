@@ -1,9 +1,13 @@
 """
 A/B Test Analyzer — Streamlit UI.
 
-Lets a user enter conversion-rate test data and get a complete statistical
-report: frequentist, Bayesian, and power analysis, all with plain-English
-interpretation.
+Two modes:
+  1. Two links, one story (news): compare engagement between two links /
+     headlines for the same story and learn which one readers prefer.
+  2. General A/B test: any conversion-rate experiment.
+
+Both give a complete statistical report: frequentist, Bayesian, and power
+analysis, with plain-English interpretation.
 """
 
 import sys
@@ -30,9 +34,39 @@ st.set_page_config(
 )
 
 
+# === SESSION STATE DEFAULTS (so presets can fill the inputs) ===
+DEFAULTS = {"cu": 1000, "cc": 80, "vu": 1000, "vc": 95}
+NEWS_PRESET = {"cu": 4200, "cc": 310, "vu": 4150, "vc": 365}
+
+for key, val in DEFAULTS.items():
+    st.session_state.setdefault(key, val)
+st.session_state.setdefault("name_a", "Link A")
+st.session_state.setdefault("name_b", "Link B")
+
+
+def load_news_preset():
+    for key, val in NEWS_PRESET.items():
+        st.session_state[key] = val
+    st.session_state["name_a"] = "Link A: 'City Council Approves New Budget'"
+    st.session_state["name_b"] = "Link B: 'How the New Budget Will Affect You'"
+
+
+def load_generic_preset():
+    for key, val in DEFAULTS.items():
+        st.session_state[key] = val
+    st.session_state["name_a"] = "Control (A)"
+    st.session_state["name_b"] = "Variant (B)"
+
+
 # === SIDEBAR: CONTROLS & SAMPLE-SIZE CALCULATOR ===
 with st.sidebar:
     st.header("⚙️ Settings")
+    mode = st.radio(
+        "Mode",
+        ["🔗 Two links, one story (news)", "🧪 General A/B test"],
+    )
+    news_mode = mode.startswith("🔗")
+
     alpha = st.slider("Significance level (α)", 0.01, 0.10, 0.05, 0.01)
     meaningful_lift = st.slider(
         "Meaningful relative lift threshold (%)",
@@ -58,28 +92,55 @@ with st.sidebar:
 
 
 # === HEADER ===
-st.title("🧪 A/B Test Analyzer")
-st.markdown(
-    "A rigorous statistical analyzer for A/B test results — **frequentist + "
-    "Bayesian + power analysis** with plain-English interpretation."
-)
+if news_mode:
+    st.title("🔗 Two Links, One Story")
+    st.markdown(
+        "A newspaper publishes the **same story under two links or headlines**. "
+        "Enter how many readers saw each and how many clicked or engaged. "
+        "This tool tells you **which link readers respond to better — and whether "
+        "that difference is real or just luck.**"
+    )
+    st.info(
+        "ℹ️ This measures **reader engagement**, not factual accuracy. "
+        "It answers 'which version performs better?', not 'which is true?'."
+    )
+    st.button("📰 Load news example", on_click=load_news_preset)
+    unit_users, unit_conv = "Views", "Clicks"
+    rate_label = "Click rate"
+else:
+    st.title("🧪 A/B Test Analyzer")
+    st.markdown(
+        "A rigorous statistical analyzer for A/B test results — **frequentist + "
+        "Bayesian + power analysis** with plain-English interpretation."
+    )
+    st.button("↺ Reset to generic example", on_click=load_generic_preset)
+    unit_users, unit_conv = "Users", "Conversions"
+    rate_label = "rate"
 
 
 # === DATA INPUT ===
-st.subheader("📊 Enter your test results")
+st.subheader("📊 Enter your results")
 
 col1, col2 = st.columns(2)
 with col1:
-    st.markdown("**Control (A)**")
-    control_users = st.number_input("Users (control)", 1, 10_000_000, 1000, key="cu")
-    control_conv = st.number_input("Conversions (control)", 0, 10_000_000, 80, key="cc")
+    if news_mode:
+        name_a = st.text_input("Label for first link", key="name_a")
+    else:
+        name_a = "Control (A)"
+        st.markdown("**Control (A)**")
+    control_users = st.number_input(f"{unit_users} (A)", 1, 10_000_000, key="cu")
+    control_conv = st.number_input(f"{unit_conv} (A)", 0, 10_000_000, key="cc")
 with col2:
-    st.markdown("**Variant (B)**")
-    variant_users = st.number_input("Users (variant)", 1, 10_000_000, 1000, key="vu")
-    variant_conv = st.number_input("Conversions (variant)", 0, 10_000_000, 95, key="vc")
+    if news_mode:
+        name_b = st.text_input("Label for second link", key="name_b")
+    else:
+        name_b = "Variant (B)"
+        st.markdown("**Variant (B)**")
+    variant_users = st.number_input(f"{unit_users} (B)", 1, 10_000_000, key="vu")
+    variant_conv = st.number_input(f"{unit_conv} (B)", 0, 10_000_000, key="vc")
 
 if control_conv > control_users or variant_conv > variant_users:
-    st.error("Conversions can't exceed users.")
+    st.error(f"{unit_conv} can't exceed {unit_users.lower()}.")
     st.stop()
 
 
@@ -95,28 +156,62 @@ power = observed_power(control_users, variant_users, freq.control_rate, freq.var
 # === HEADLINE METRICS ===
 st.divider()
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("Control rate",  f"{freq.control_rate*100:.2f}%")
-c2.metric("Variant rate",  f"{freq.variant_rate*100:.2f}%",
-          delta=f"{freq.absolute_lift*100:+.2f} pp")
-c3.metric("Relative lift", f"{freq.relative_lift*100:+.1f}%")
-c4.metric("P(variant > control)",
-          f"{bayes.prob_variant_better*100:.1f}%",
-          delta="Bayesian")
+if news_mode:
+    c1.metric("Link A click rate", f"{freq.control_rate*100:.2f}%")
+    c2.metric("Link B click rate", f"{freq.variant_rate*100:.2f}%",
+              delta=f"{freq.absolute_lift*100:+.2f} pp")
+    c3.metric("Relative difference", f"{freq.relative_lift*100:+.1f}%")
+    c4.metric("P(B beats A)", f"{bayes.prob_variant_better*100:.1f}%", delta="Bayesian")
+else:
+    c1.metric("Control rate", f"{freq.control_rate*100:.2f}%")
+    c2.metric("Variant rate", f"{freq.variant_rate*100:.2f}%",
+              delta=f"{freq.absolute_lift*100:+.2f} pp")
+    c3.metric("Relative lift", f"{freq.relative_lift*100:+.1f}%")
+    c4.metric("P(variant > control)", f"{bayes.prob_variant_better*100:.1f}%", delta="Bayesian")
 
 
 # === VERDICT BOX ===
 st.divider()
-verdict = interpret_bayesian_result(bayes)
-if bayes.prob_variant_better >= 0.95:
-    st.success(f"✅ **Ship the variant.** {verdict}")
-elif bayes.prob_variant_better >= 0.85:
-    st.info(f"🟡 **Lean variant — but consider more data.** {verdict}")
-elif bayes.prob_variant_better <= 0.05:
-    st.error(f"🛑 **Do not ship.** {verdict}")
-elif bayes.prob_variant_better <= 0.15:
-    st.warning(f"🔻 **Lean against variant.** {verdict}")
+
+if news_mode:
+    p_b = bayes.prob_variant_better
+    if freq.significant and freq.absolute_lift > 0:
+        winner, loser = name_b, name_a
+        st.success(
+            f"🏆 **Winner: {winner}.** Readers click it more than {loser}, and the "
+            f"gap is statistically significant (p = {freq.p_value:.4f}). "
+            f"There is a {p_b*100:.1f}% probability it truly performs better. "
+            f"**Recommendation: promote this link.**"
+        )
+    elif freq.significant and freq.absolute_lift < 0:
+        winner, loser = name_a, name_b
+        st.success(
+            f"🏆 **Winner: {winner}.** Readers click it more than {loser}, and the "
+            f"gap is statistically significant (p = {freq.p_value:.4f}). "
+            f"There is a {(1-p_b)*100:.1f}% probability it truly performs better. "
+            f"**Recommendation: promote this link.**"
+        )
+    else:
+        leader = name_b if freq.absolute_lift > 0 else name_a
+        chance = p_b if freq.absolute_lift > 0 else 1 - p_b
+        st.warning(
+            f"⚖️ **No clear winner yet.** {leader} is ahead ({chance*100:.1f}% "
+            f"probability of being better), but the gap isn't statistically "
+            f"significant (p = {freq.p_value:.4f}). It could be random chance. "
+            f"**Recommendation: keep collecting data before deciding.**"
+        )
 else:
-    st.warning(f"⚖️ **Inconclusive.** {verdict}")
+    verdict = interpret_bayesian_result(bayes)
+    if bayes.prob_variant_better >= 0.95:
+        st.success(f"✅ **Ship the variant.** {verdict}")
+    elif bayes.prob_variant_better >= 0.85:
+        st.info(f"🟡 **Lean variant — but consider more data.** {verdict}")
+    elif bayes.prob_variant_better <= 0.05:
+        st.error(f"🛑 **Do not ship.** {verdict}")
+    elif bayes.prob_variant_better <= 0.15:
+        st.warning(f"🔻 **Lean against variant.** {verdict}")
+    else:
+        st.warning(f"⚖️ **Inconclusive.** {verdict}")
 
 
 # === DETAILED TABS ===
@@ -140,16 +235,16 @@ with tab1:
 with tab2:
     st.markdown("**Bayesian Beta-Binomial inference**")
     col_a, col_b, col_c = st.columns(3)
-    col_a.metric("P(variant > control)", f"{bayes.prob_variant_better*100:.1f}%")
-    col_b.metric(f"P(meaningfully better)", f"{bayes.prob_variant_meaningfully_better*100:.1f}%")
+    col_a.metric("P(B > A)", f"{bayes.prob_variant_better*100:.1f}%")
+    col_b.metric("P(meaningfully better)", f"{bayes.prob_variant_meaningfully_better*100:.1f}%")
     col_c.metric("Expected lift", f"{bayes.expected_lift*100:+.2f} pp")
     st.markdown(
         f"**95% credible interval on lift:** "
         f"`[{bayes.credible_interval_low*100:+.2f}, {bayes.credible_interval_high*100:+.2f}]` pp"
     )
     st.markdown(
-        f"**Expected loss if we pick variant:** `{bayes.expected_loss_choosing_variant*100:.3f} pp` &nbsp;&nbsp; "
-        f"**vs. if we stick with control:** `{bayes.expected_loss_choosing_control*100:.3f} pp`"
+        f"**Expected loss if we pick B:** `{bayes.expected_loss_choosing_variant*100:.3f} pp` &nbsp;&nbsp; "
+        f"**vs. if we stick with A:** `{bayes.expected_loss_choosing_control*100:.3f} pp`"
     )
 
     # Posterior distributions chart
@@ -157,20 +252,20 @@ with tab2:
     control_pdf = stats.beta.pdf(x, 1 + control_conv, 1 + control_users - control_conv)
     variant_pdf = stats.beta.pdf(x, 1 + variant_conv, 1 + variant_users - variant_conv)
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x*100, y=control_pdf, name="Control posterior",
+    fig.add_trace(go.Scatter(x=x*100, y=control_pdf, name=f"{name_a} posterior",
                              fill="tozeroy", line=dict(color="#1f77b4")))
-    fig.add_trace(go.Scatter(x=x*100, y=variant_pdf, name="Variant posterior",
+    fig.add_trace(go.Scatter(x=x*100, y=variant_pdf, name=f"{name_b} posterior",
                              fill="tozeroy", line=dict(color="#2ca02c"), opacity=0.7))
     fig.update_layout(
         height=350,
-        xaxis_title="Conversion rate (%)",
+        xaxis_title="True click / conversion rate (%)",
         yaxis_title="Posterior density",
         margin=dict(l=10, r=10, t=10, b=10),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
     )
     st.plotly_chart(fig, use_container_width=True)
     st.caption(
-        "Each curve shows the range of plausible true conversion rates for that arm, "
+        "Each curve shows the range of plausible true rates for that link/version, "
         "given the observed data. The more they overlap, the less certain we are."
     )
 
@@ -185,7 +280,7 @@ with tab3:
     st.caption(
         "Power = probability of detecting a real effect if one exists. "
         "Industry convention is 80%. Below that, a null result may just mean "
-        "your test was too small — not that the variant didn't work."
+        "your test was too small — not that one version didn't work better."
     )
 
 
