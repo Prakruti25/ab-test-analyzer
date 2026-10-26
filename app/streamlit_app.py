@@ -26,22 +26,13 @@ MEANINGFUL_LIFT = 0.01
 
 st.set_page_config(page_title="Two Links, One Story", page_icon="🔗", layout="wide")
 
-# === DEFAULTS (so the example button can fill the inputs) ===
-st.session_state.setdefault("name_a", "Headline A")
-st.session_state.setdefault("name_b", "Headline B")
-st.session_state.setdefault("cu", 1000)
-st.session_state.setdefault("cc", 80)
-st.session_state.setdefault("vu", 1000)
-st.session_state.setdefault("vc", 95)
-
-
-def load_example():
-    st.session_state["name_a"] = "Headline A: 'City Council Approves New Budget'"
-    st.session_state["name_b"] = "Headline B: 'How the New Budget Will Affect You'"
-    st.session_state["cu"] = 4200
-    st.session_state["cc"] = 310
-    st.session_state["vu"] = 4150
-    st.session_state["vc"] = 365
+# === DEFAULTS: start on the sample example ===
+st.session_state.setdefault("name_a", "Headline A: 'City Council Approves New Budget'")
+st.session_state.setdefault("name_b", "Headline B: 'How the New Budget Will Affect You'")
+st.session_state.setdefault("cu", 4200)
+st.session_state.setdefault("cc", 310)
+st.session_state.setdefault("vu", 4150)
+st.session_state.setdefault("vc", 365)
 
 
 # === HEADER ===
@@ -53,20 +44,19 @@ st.markdown(
 )
 st.caption(
     "Measures reader engagement, not factual accuracy. "
-    "The numbers here are sample data; in real use they would come from a site's analytics."
+    "Showing sample data; in real use the numbers would come from a site's analytics."
 )
-st.button("📰 Load example", on_click=load_example)
 
-# === INPUT ===
-col1, col2 = st.columns(2)
-with col1:
-    name_a = st.text_input("Name of first link", key="name_a")
-    control_users = st.number_input("Views (A)", 1, 10_000_000, key="cu")
-    control_conv = st.number_input("Clicks (A)", 0, 10_000_000, key="cc")
-with col2:
-    name_b = st.text_input("Name of second link", key="name_b")
-    variant_users = st.number_input("Views (B)", 1, 10_000_000, key="vu")
-    variant_conv = st.number_input("Clicks (B)", 0, 10_000_000, key="vc")
+with st.expander("✏️ Use your own numbers"):
+    col1, col2 = st.columns(2)
+    with col1:
+        name_a = st.text_input("Name of first link", key="name_a")
+        control_users = st.number_input("Views (A)", 1, 10_000_000, key="cu")
+        control_conv = st.number_input("Clicks (A)", 0, 10_000_000, key="cc")
+    with col2:
+        name_b = st.text_input("Name of second link", key="name_b")
+        variant_users = st.number_input("Views (B)", 1, 10_000_000, key="vu")
+        variant_conv = st.number_input("Clicks (B)", 0, 10_000_000, key="vc")
 
 if control_conv > control_users or variant_conv > variant_users:
     st.error("Clicks can't be higher than views.")
