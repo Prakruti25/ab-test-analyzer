@@ -1,6 +1,6 @@
 import pytest
 
-from src.source_compare import (
+from src.story_compare import (
     compare_sources, extract_names, extract_numbers, find_conflicts,
     html_to_text, score_against_reference,
 )
