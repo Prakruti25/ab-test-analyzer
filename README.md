@@ -4,7 +4,7 @@
 
 ### 🔗 [**Live Demo →**](https://prakruti-ab-test-analyzer.streamlit.app/)
 
-![Hero](images/hero.png)
+
 
 ---
 
@@ -30,54 +30,6 @@ What it does not do: it does not decide which source is true. It finds disagreem
 📄 Transparency: shows exactly what text was read from each page
 🧹 Clutter filtering: drops footers, copyright lines, and repeated paragraphs before comparing
 
-
-⚠️ Limitations
-It compares numbers. Differences that are only in wording are not detected.
-Sentence matching uses shared words, so on pages that list many similar items it can occasionally pair the wrong lines.
-Some sites block automated readers. The paste-text option is the fallback.
-"Closer to the reference" is only as reliable as the reference the user provides.
-Years and dates are ignored when counting agreed figures.
-🛠️ Tech Stack
-Python (standard library re, html.parser, dataclasses)
-Streamlit for the web app
-requests for downloading pages
-pytest for unit tests
-📁 Project Structure
-ab-test-analyzer/
-├── app/
-│   └── streamlit_app.py        # Story Checker web app
-├── src/
-│   ├── story_compare.py        # Comparison engine (used by the app)
-│   ├── frequentist.py          # z-test and Welch's t-test
-│   ├── bayesian.py             # Beta-Binomial inference
-│   ├── power.py                # Power and sample-size analysis
-│   └── data_loader.py
-├── tests/                      # pytest unit tests
-├── notebooks/
-├── conftest.py
-└── requirements.txt
-
-The project began as an A/B test statistics toolkit. Those modules (frequentist.py, bayesian.py, power.py) are still in src/ with their tests, but the live app is the Story Checker.
-
-🚀 Run Locally
-bash
-git clone https://github.com/Prakruti25/ab-test-analyzer.git
-cd ab-test-analyzer
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-pytest tests/ -v
-streamlit run app/streamlit_app.py
-🔮 Future Enhancements
-Smarter claim matching with a language model, to catch differences in wording as well as numbers
-Support for dates, units, and currencies
-Better extraction of main article content from complex pages
-Highlight the differing figures inside the sentences
-Compare more than two sources at once
-Re-attach the A/B testing statistics (z-test and Bayesian inference) to compare which of two headlines readers prefer
-📄 License
-
-See LICENSE.
 
 ## 👩‍💻 Author
 
