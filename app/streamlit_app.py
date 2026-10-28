@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import streamlit as st
 
-from src.source_compare import (
+from src.story_compare import (
     compare_sources, fetch_article_text, score_against_reference,
 )
 
