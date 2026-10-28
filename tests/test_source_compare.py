@@ -70,3 +70,43 @@ def test_html_to_text_extracts_paragraphs_only():
             "<p>The council voted 28 to 12 on Tuesday evening</p><p>ok</p></html>")
     text = html_to_text(html)
     assert "28 to 12" in text and "var x" not in text
+
+
+# --- clearer results for real pages -----------------------------------------
+GOLD_A = ("Today's gold price in Ahmedabad stands at ₹14,400.00 per gram for 24 karat gold, "
+          "₹13,200.00 per gram for 22 karat gold, and ₹10,800.00 per gram for 18 karat gold.")
+GOLD_B = ("Today's gold price in Ahmedabad stands at ₹14,400 per gram for 24 karat gold, "
+          "₹13,200 per gram for 22 karat gold, and ₹10,801 per gram for 18 karat gold.")
+
+
+def test_tiny_difference_is_minor():
+    result = compare_sources(GOLD_A, GOLD_B)
+    assert len(result.conflicts) == 1
+    assert result.conflicts[0].minor
+    assert result.major_conflicts == [] and len(result.minor_conflicts) == 1
+
+
+def test_big_difference_is_major():
+    result = compare_sources(A, B)
+    assert len(result.major_conflicts) == 2
+    assert result.minor_conflicts == []
+
+
+def test_years_not_counted_as_figures():
+    result = compare_sources("Report from 2026 shows 5 people", "Report from 2026 shows 5 people")
+    assert "2026" not in result.shared_numbers
+    assert "5" in result.shared_numbers
+
+
+def test_boilerplate_paragraphs_removed():
+    html = ("<p>The council voted 28 to 12 on Tuesday evening</p>"
+            "<p>Copyright 2026 Some Company Pvt Ltd. All Rights Reserved.</p>"
+            "<footer><p>Footer text that is long enough to be kept otherwise</p></footer>")
+    text = html_to_text(html)
+    assert "28 to 12" in text
+    assert "Rights Reserved" not in text and "Footer text" not in text
+
+
+def test_repeated_paragraphs_deduplicated():
+    html = "<p>The council voted 28 to 12 on Tuesday evening</p>" * 3
+    assert html_to_text(html).count("28 to 12") == 1
