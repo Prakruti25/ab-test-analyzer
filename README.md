@@ -8,69 +8,95 @@
 
 ---
 
-## 🎯 The Problem It Solves
+🎯 The Problem It Solves
 
-Most "A/B test calculators" online give you a single p-value and a vibes-based conclusion. Real product decisions need more:
+When two websites report the same story, such as a gold price, a budget figure, or a match score, their numbers don't always match. Checking by hand means reading both pages line by line.
 
-- Was the test **powered enough** to detect a real effect, or are we drawing conclusions from noise?
-- What's the **probability the variant is actually better** (Bayesian)?
-- What's the **expected downside** if we ship the variant and it's actually worse?
-- Are we measuring **statistical significance** or **practical significance**?
+Story Checker does the comparison for you and answers:
 
-This tool answers all of those for any A/B test you throw at it — with plain-English interpretation a PM can act on.
+Which figures do both sources agree on?
+Where do they genuinely disagree, and which exact sentences should I verify?
+Is a difference important, or just rounding or a timing gap between updates?
 
-## ✨ Features
+What it does not do: it does not decide which source is true. It finds disagreements so a person can verify the specific claims that matter.
 
-- 📈 **Two-proportion z-test** with 95% confidence interval on the lift
-- 🎲 **Bayesian Beta-Binomial inference** — `P(variant > control)`, credible intervals, expected loss
-- ⚡ **Power analysis** — observed power for completed tests, sample-size calculator for planning new ones
-- 🟢 **Plain-English verdict** — auto-generated ship/don't-ship recommendation
-- 📊 **Interactive posterior visualization** — overlapping density curves so you can *see* the uncertainty
-- 🧪 **Unit-tested** — 15 passing tests across the entire stats engine
+✨ Features
+🔗 Paste two links: the app downloads each page and extracts the article text (or paste the text directly if a site blocks automated readers)
+🔍 Claim matching: pairs up sentences from the two sources that talk about the same thing
+🔴 Real conflicts: flags numbers that genuinely differ, shown side by side
+🟡 Minor differences: gaps under 0.1% are labelled as likely rounding or update timing, not alarms
+✅ Agreement list: every figure both sources share
+📌 Optional reference check: add an official text (press release, court order) and see which source is closer to it
+📄 Transparency: shows exactly what text was read from each page
+🧹 Clutter filtering: drops footers, copyright lines, and repeated paragraphs before comparing
+📸 Example
 
-## 🛠️ Tech Stack
+Comparing two live gold-rate pages for Ahmedabad:
 
-![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=flat&logo=python&logoColor=white)
-![scipy](https://img.shields.io/badge/scipy-stats-8CAAE6?style=flat&logo=scipy&logoColor=white)
-![statsmodels](https://img.shields.io/badge/statsmodels-0.14-3F4F75?style=flat)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.38-FF4B4B?style=flat&logo=streamlit&logoColor=white)
-![Plotly](https://img.shields.io/badge/Plotly-charts-3F4F75?style=flat&logo=plotly&logoColor=white)
-![pytest](https://img.shields.io/badge/pytest-15%20passing-0A9EDC?style=flat&logo=pytest&logoColor=white)
+Result	Value
+Figures both sources agree on	8 (24K and 22K prices, purity levels)
+Real conflicts	0
+Minor rounding differences	1 (18K price: ₹10,800 vs ₹10,801, a gap of about 0.01%)
 
+Verdict: "All main figures match. Only 1 tiny difference, most likely rounding or the sites updating at different times."
 
-## 🧠 Statistical Methods
+⚙️ How It Works
+Fetch: download each page and keep only article paragraphs (script, footer, and navigation content is dropped).
+Split: break the text into sentences.
+Match: pair each sentence with the most similar sentence in the other source, using shared content words.
+Extract: pull out numbers (normalising formats like ₹14,400.00 and ₹14,400, and units like 12 percent and 12%).
+Compare: if both sentences contain numbers and neither set contains the other, it's a conflict.
+Classify: if the numbers differ by 0.1% or less, it's a minor difference. Anything larger is a real conflict.
 
-### Frequentist
-- **Two-proportion z-test** with pooled variance for the test statistic, unpooled for the CI on the difference
-- **Welch's t-test** for continuous metrics (unequal-variance safe)
+It is rule-based Python with no AI model involved, so results are deterministic and easy to explain.
 
-### Bayesian
-- **Beta-Binomial conjugate model** with `Beta(1, 1)` (uniform) prior
-- **Monte Carlo sampling** (100,000 draws) for `P(variant > control)` and credible intervals
-- **Expected loss** metric for risk-aware decision-making
+⚠️ Limitations
+It compares numbers. Differences that are only in wording are not detected.
+Sentence matching uses shared words, so on pages that list many similar items it can occasionally pair the wrong lines.
+Some sites block automated readers. The paste-text option is the fallback.
+"Closer to the reference" is only as reliable as the reference the user provides.
+Years and dates are ignored when counting agreed figures.
+🛠️ Tech Stack
+Python (standard library re, html.parser, dataclasses)
+Streamlit for the web app
+requests for downloading pages
+pytest for unit tests
+📁 Project Structure
+ab-test-analyzer/
+├── app/
+│   └── streamlit_app.py        # Story Checker web app
+├── src/
+│   ├── story_compare.py        # Comparison engine (used by the app)
+│   ├── frequentist.py          # z-test and Welch's t-test
+│   ├── bayesian.py             # Beta-Binomial inference
+│   ├── power.py                # Power and sample-size analysis
+│   └── data_loader.py
+├── tests/                      # pytest unit tests
+├── notebooks/
+├── conftest.py
+└── requirements.txt
 
-### Power Analysis
-- Sample-size formula using pooled and unpooled variances
-- Observed power calculation for completed tests
+The project began as an A/B test statistics toolkit. Those modules (frequentist.py, bayesian.py, power.py) are still in src/ with their tests, but the live app is the Story Checker.
 
-## 🚀 Run Locally
-
-```bash
+🚀 Run Locally
+bash
 git clone https://github.com/Prakruti25/ab-test-analyzer.git
 cd ab-test-analyzer
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-pytest tests/ -v          # confirm 15 tests pass
+pytest tests/ -v
 streamlit run app/streamlit_app.py
-```
+🔮 Future Enhancements
+Smarter claim matching with a language model, to catch differences in wording as well as numbers
+Support for dates, units, and currencies
+Better extraction of main article content from complex pages
+Highlight the differing figures inside the sentences
+Compare more than two sources at once
+Re-attach the A/B testing statistics (z-test and Bayesian inference) to compare which of two headlines readers prefer
+📄 License
 
-## 🔮 Future Enhancements
-
-- [ ] Sequential testing (mSPRT / AGILE) to allow peeking without inflating false-positive rate
-- [ ] Multi-variant test support (A/B/C/D)
-- [ ] CUPED variance reduction for continuous metrics
-- [ ] Segmentation upload — auto-detect Simpson's Paradox
+See LICENSE.
 
 ## 👩‍💻 Author
 
