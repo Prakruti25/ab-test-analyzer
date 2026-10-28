@@ -29,26 +29,7 @@ What it does not do: it does not decide which source is true. It finds disagreem
 📌 Optional reference check: add an official text (press release, court order) and see which source is closer to it
 📄 Transparency: shows exactly what text was read from each page
 🧹 Clutter filtering: drops footers, copyright lines, and repeated paragraphs before comparing
-📸 Example
 
-Comparing two live gold-rate pages for Ahmedabad:
-
-Result	Value
-Figures both sources agree on	8 (24K and 22K prices, purity levels)
-Real conflicts	0
-Minor rounding differences	1 (18K price: ₹10,800 vs ₹10,801, a gap of about 0.01%)
-
-Verdict: "All main figures match. Only 1 tiny difference, most likely rounding or the sites updating at different times."
-
-⚙️ How It Works
-Fetch: download each page and keep only article paragraphs (script, footer, and navigation content is dropped).
-Split: break the text into sentences.
-Match: pair each sentence with the most similar sentence in the other source, using shared content words.
-Extract: pull out numbers (normalising formats like ₹14,400.00 and ₹14,400, and units like 12 percent and 12%).
-Compare: if both sentences contain numbers and neither set contains the other, it's a conflict.
-Classify: if the numbers differ by 0.1% or less, it's a minor difference. Anything larger is a real conflict.
-
-It is rule-based Python with no AI model involved, so results are deterministic and easy to explain.
 
 ⚠️ Limitations
 It compares numbers. Differences that are only in wording are not detected.
